@@ -1,3 +1,9 @@
+This docker is set up to cater for my need to develop some personal projects that are based on Hadoop, Hive, Spark and Python.
+
+The first project that I'm still working on based on this infrastructural environment is [weather forecasting](https://github.com/james-wukong/python-weather).
+
+It would be very flexible if you want append extra services into this boilerplate, such kafka. Simply add it in docker-compose.yml.
+
 ## This is a develop env for Hadoop-Hive-Spark cluster + Jupyter on Docker
 
 This docker is originated from [hadoop-hive-spark-docker](https://github.com/myamafuj/hadoop-hive-spark-docker)
@@ -15,6 +21,10 @@ and on top of that, a sparknet configured as below is needed.
 GPU part is commented, as it's not supported in my machine.
 
 In case if you need add a kafka service in the future, you can simply add it as a service.
+
+## Hadoop Dev
+
+This is the main container that I use to have some practical work going on.
 
 ## Create docker network sparknet, with subnet and gateway configured
 
@@ -63,4 +73,9 @@ docker run --name mongo -dit \
     mongodb/mongodb-community-server:latest
 
 docker exec -it mongo mongosh
+```
+
+```sh
+# run the container in terminal
+docker exec -it hadoop_dev /bin/bash
 ```
