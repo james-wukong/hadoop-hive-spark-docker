@@ -1,49 +1,66 @@
-# Hadoop-Hive-Spark cluster + Jupyter on Docker
+## This is a develop env for Hadoop-Hive-Spark cluster + Jupyter on Docker
 
-## Software
+This docker is originated from [hadoop-hive-spark-docker](https://github.com/myamafuj/hadoop-hive-spark-docker)
 
-* [Hadoop 3.3.4](https://hadoop.apache.org/)
+This docker includes 7 containers (I removed jupyter container, so it is 6 containers for me):
 
-* [Hive 3.1.3](http://hive.apache.org/)
+- metastore container (postgres database)
+- dev container (development container, hadoop, hive, spark, tensorflow and conda installed)
+- master container (master container, containers, hadoop, hive, spark installed)
+- two worker containers(containers, hadoop, hive, spark installed)
+- history container(containers, hadoop, hive, spark installed)
 
-* [Spark 3.3.1](https://spark.apache.org/)
+and on top of that, a sparknet configured as below is needed. 
 
-## Quick Start
+GPU part is commented, as it's not supported in my machine.
 
-To deploy the cluster, run:
+In case if you need add a kafka service in the future, you can simply add it as a service.
+
+## Create docker network sparknet, with subnet and gateway configured
+
+```sh
+docker network create --driver=bridge \
+    --subnet=172.28.0.0/16 \
+    --gateway=172.28.255.254 \
+    sparknet
 ```
-make
-docker-compose up
+
+```sh
+# attach container to network(sparknet)
+docker network connect sparknet container
 ```
 
-## Access interfaces with the following URL
+```sh
+# create conda env from file
+conda create --name MySpark python=3.11
+# or
+conda env create --file ~/conda-env/hello-spark.yml
+```
 
-### Hadoop
+```sh
+# create the mysql container and attach it to sparknet
+docker run --name mysql -dit \
+    --network sparknet \
+    --hostname mysql \
+    -p 3306:3306 \
+    -e MYSQL_ROOT_PASSWORD=root \
+    -v ~/Documents/Docker-Volumns/mysql:/var/lib/mysql \
+    mysql:latest
 
-ResourceManager: http://localhost:8088
+docker exec -it mysql mysql -p
+```
 
-NameNode: http://localhost:9870
+```sh
+# create mongodb container and attach it to sparknet
+docker pull mongodb/mongodb-community-server
 
-HistoryServer: http://localhost:19888
+docker run --name mongo -dit \
+    --network sparknet \
+    --hostname mongodb \
+    -p 27017:27017 \
+    -v ~/Documents/Docker-Volumns/mongo:/data \
+    -w /data \
+    mongodb/mongodb-community-server:latest
 
-Datanode1: http://localhost:9864
-Datanode2: http://localhost:9865
-
-NodeManager1: http://localhost:8042
-NodeManager2: http://localhost:8043
-
-### Spark
-master: http://localhost:8080
-
-worker1: http://localhost:8081
-worker2: http://localhost:8082
-
-history: http://localhost:18080
-
-### Hive
-URI: jdbc:hive2://localhost:10000
-
-### Jupyter Notebook
-URL: http://localhost:8888
-
-example: [jupyter/notebook/pyspark.ipynb](jupyter/notebook/pyspark.ipynb)
+docker exec -it mongo mongosh
+```

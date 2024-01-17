@@ -1,7 +1,7 @@
 FROM hadoop-hive-spark-base AS base
-FROM tensorflow/tensorflow:latest-gpu
+FROM tensorflow/tensorflow
 
-RUN sed -i -e "s|http://archive.ubuntu.com|http://jp.archive.ubuntu.com|g" /etc/apt/sources.list \
+RUN sed -i -e "s|http://archive.ubuntu.com|http://ca.archive.ubuntu.com|g" /etc/apt/sources.list \
  && apt-get -qq update  \
  && DEBIAN_FRONTEND=noninteractive apt-get -qq install --no-install-recommends \
       sudo \
@@ -23,7 +23,7 @@ RUN echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
 
 USER $USERNAME
 
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
 # Hadoop
 COPY --from=base --chown=$USERNAME:$GROUPNAME /opt/hadoop /opt/hadoop
@@ -52,5 +52,23 @@ RUN sudo pip install -U pip &&\
     openpyxl \
     findspark \
     tensorflow-serving-api
+    
+# Install miniconda
+ENV CONDA_DIR=/opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+    && sudo /bin/bash /tmp/miniconda.sh -b -p $CONDA_DIR \
+    && sudo chown $USERNAME:$GROUPNAME -R $CONDA_DIR \
+    && sudo mkdir /home/$USERNAME/conda-env \
+    && sudo mkdir /home/$USERNAME/data \
+    && sudo chown $USERNAME:$GROUPNAME -R /home/$USERNAME/conda-env \
+    && sudo chown $USERNAME:$GROUPNAME -R /home/$USERNAME/data 
+# Put conda in path so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# Config
+COPY --chown=$USERNAME:$GROUPNAME conda-env/hello-spark.yml /home/$USERNAME/conda-env/
+COPY --chown=$USERNAME:$GROUPNAME data/* /home/$USERNAME/data/
+# RUN conda env create -f /home/$USERNAME/conda-env/hello-spark.yml \
+#     && conda activate hello-spark
 
 WORKDIR /home/$USERNAME
